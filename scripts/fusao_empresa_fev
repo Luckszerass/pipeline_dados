@@ -1,0 +1,140 @@
+import json
+import csv
+import os  # Importado para criar diretórios
+
+# IMPORTANDO VARIÁVEIS:
+path_csv = 'data_raw/dados_empresaB.csv'
+path_json = 'data_raw/dados_empresaA.json'
+
+# Leitura de JSON
+def leitura_json(path_json):
+    print(f"Lendo arquivo JSON: {path_json}")
+    dados_json = []
+    with open(path_json, 'r', encoding='utf-8') as file:
+        dados_json = json.load(file)
+    print("Leitura JSON concluída.")
+    return dados_json
+
+# Leitura de CSV
+def leitura_csv(path_csv):
+    print(f"Lendo arquivo CSV: {path_csv}")
+    dados_csv = []
+    with open(path_csv, 'r', encoding='utf-8') as file:
+        spamreader = csv.DictReader(file, delimiter=',')
+        for row in spamreader:
+            dados_csv.append(row)
+    print("Leitura CSV concluída.")
+    return dados_csv
+
+# Leitura genérica de dados
+def leitura_dados(path, tipo_arquivo):
+    print(f"Iniciando leitura de dados. Tipo: {tipo_arquivo}")
+    dados = []
+    if tipo_arquivo == 'csv':
+        dados = leitura_csv(path)
+    elif tipo_arquivo == 'json':
+        dados = leitura_json(path)
+    print(f"Leitura de dados concluída. Total de registros lidos: {len(dados)}")
+    return dados
+
+# Obter colunas
+def get_columns(dados):
+    print("Obtendo colunas dos dados...")
+    colunas = list(dados[-1].keys())
+    print(f"Colunas obtidas: {colunas}")
+    return colunas
+
+# Renomear colunas com mapeamento
+def rename_columns(dados, key_mapping):
+    print("Renomeando colunas...")
+    new_dados_csv = []
+    for old_dict in dados:
+        dict_temp = {}
+        for old_key, value in old_dict.items():
+            dict_temp[key_mapping.get(old_key, old_key)] = value
+        new_dados_csv.append(dict_temp)
+    print("Renomeação de colunas concluída.")
+    return new_dados_csv
+
+# Tamanho dos dados
+def size_data(dados):
+    tamanho = len(dados)
+    print(f"Tamanho dos dados: {tamanho}")
+    return tamanho
+
+# Combinar dados
+def join(dadosA, dadosB):
+    print("Combinando os dados...")
+    combined_list = []
+    combined_list.extend(dadosA)
+    combined_list.extend(dadosB)
+    print(f"Dados combinados. Total de registros: {len(combined_list)}")
+    return combined_list
+
+# Transformar dados em tabela
+def transformando_dados_tabela(dados, nomes_colunas):
+    print("Transformando dados em formato de tabela...")
+    dados_combinados_tabela = [nomes_colunas]
+    for row in dados:
+        linha = []
+        for coluna in nomes_colunas:
+            linha.append(row.get(coluna, 'Indisponível'))
+        dados_combinados_tabela.append(linha)
+    print("Transformação concluída.")
+    return dados_combinados_tabela
+
+# Salvar dados em arquivo
+def salvando_dados(dados, path):
+    print(f"Salvando dados em: {path}")
+    os.makedirs(os.path.dirname(path), exist_ok=True)  # Garante que o diretório existe
+    with open(path, 'w', encoding='utf-8', newline='') as file:  # Inclui encoding e newline
+        writer = csv.writer(file)
+        writer.writerows(dados)
+    print("Dados salvos com sucesso.")
+
+# Iniciando a leitura
+print("=== INÍCIO DA LEITURA DOS ARQUIVOS ===")
+dados_json = leitura_dados(path_json, 'json')
+nome_colunas_json = get_columns(dados_json)
+tamanho_dados_json = size_data(dados_json)
+
+print(f"Nome colunas dados json: {nome_colunas_json}")
+print(f"Tamanho dos dados json: {tamanho_dados_json}")
+
+dados_csv = leitura_dados(path_csv, 'csv')
+nome_colunas_csv = get_columns(dados_csv)
+tamanho_dados_csv = size_data(dados_csv)
+
+print(f"Nome colunas dados csv: {nome_colunas_csv}")
+print(f"Tamanho dos dados csv: {tamanho_dados_csv}")
+
+# Transformação dos dados
+print("=== INICIANDO RENOMEAÇÃO E FUSÃO DOS DADOS ===")
+key_mapping = {
+    'Nome do Item': 'Nome do Produto',
+    'Classificação do Produto': 'Categoria do Produto',
+    'Valor em Reais (R$)': 'Preço do Produto (R$)',
+    'Quantidade em Estoque': 'Quantidade em Estoque',
+    'Nome da Loja': 'Filial',
+    'Data da Venda': 'Data da Venda'
+}
+dados_csv = rename_columns(dados_csv, key_mapping)
+nome_colunas_csv = get_columns(dados_csv)
+
+print(f"Colunas após renomeação: {nome_colunas_csv}")
+
+dados_fusao = join(dados_json, dados_csv)
+nome_colunas_fusao = get_columns(dados_fusao)
+tamanho_dados_fusao = size_data(dados_fusao)
+
+print(f"Nome colunas fusão: {nome_colunas_fusao}")
+print(f"Tamanho dos dados combinados: {tamanho_dados_fusao}")
+
+# Salvando dados
+print("=== SALVANDO OS DADOS FINAIS ===")
+dados_fusao_tabela = transformando_dados_tabela(dados_fusao, nome_colunas_fusao)
+
+path_dados_combinados = 'data_processed/dados_combinados.csv'
+salvando_dados(dados_fusao_tabela, path_dados_combinados)
+
+print(f"Arquivo final salvo em: {path_dados_combinados}")
