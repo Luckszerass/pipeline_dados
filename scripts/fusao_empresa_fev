@@ -1,6 +1,6 @@
 import json
 import csv
-import os  # Importado para criar diretórios
+import os  
 
 # IMPORTANDO VARIÁVEIS:
 path_csv = 'data_raw/dados_empresaB.csv'
